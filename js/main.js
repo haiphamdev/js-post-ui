@@ -3,11 +3,16 @@ import postApi from './api/postApi';
 console.log('hello from main.js');
 
 (async () => {
-  const queryParams = {
-    _page: 1,
-    _limit: 5,
-  };
+  try {
+    const queryParams = {
+      _page: 1,
+      _limit: 5,
+    };
 
-  const res = await postApi.getAll(queryParams);
-  console.log(res.data);
+    const data = await postApi.getAll(queryParams);
+    console.log('main.js data', data);
+  } catch (error) {
+    console.log('get all failed', error);
+    // show modal, toast error
+  }
 })();
