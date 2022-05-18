@@ -1,4 +1,8 @@
-document.querySelector('#app').innerHTML = `
-  <h1>Hello Vite!</h1>
-  <a href="https://vitejs.dev/guide/features.html" target="_blank">Documentation</a>
-`;
+import axiosClient from './api/axiosClient';
+
+console.log('hello from main.js');
+
+(async () => {
+  const res = await axiosClient.get('/posts');
+  console.log(res.data);
+})();
