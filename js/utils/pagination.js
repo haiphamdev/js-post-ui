@@ -19,31 +19,6 @@ export function renderPagination(elementId, pagination) {
   else ulPagination.lastElementChild?.classList.remove('disabled');
 }
 
-// export function handlePrevClick(e) {
-//   e.preventDefault();
-//   console.log('prev click');
-//   const ulPagination = getUlPagination();
-//   if (!ulPagination) return;
-
-//   const page = Number.parseInt(ulPagination.dataset.page) || 1;
-//   if (page <= 1) return;
-
-//   handleFilterChange('_page', page - 1);
-// }
-
-// export function handleNextClick(e) {
-//   e.preventDefault();
-//   console.log('next click');
-//   const ulPagination = getUlPagination();
-//   if (!ulPagination) return;
-
-//   const page = Number.parseInt(ulPagination.dataset.page) || 1;
-//   const totalPages = ulPagination.dataset.totalPages;
-//   if (page >= totalPages) return;
-
-//   handleFilterChange('_page', page + 1);
-// }
-
 export function initPagination({ elementId, defaultParams, onChange }) {
   // bind click event for prev/next link
   const ulPagination = document.getElementById(elementId);
