@@ -1,29 +1,30 @@
+import dayjs from 'dayjs';
 import postApi from './api/postApi';
-import { setImage, setTextContent } from './utils/common';
+import { setImage, setTextContent, truncateText } from './utils';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 function createPostElement(post) {
   if (!post) return;
 
-  try {
-    // find and clone template
-    const postTemplate = document.getElementById('postTemplate');
-    if (!postTemplate) return;
+  // find and clone template
+  const postTemplate = document.getElementById('postTemplate');
+  if (!postTemplate) return;
 
-    const liElement = postTemplate.content.firstElementChild.cloneNode(true);
-    if (!liElement) return;
+  const liElement = postTemplate.content.firstElementChild.cloneNode(true);
+  if (!liElement) return;
 
-    setTextContent(liElement, '[data-id="title"]', post.title);
-    setTextContent(liElement, '[data-id="description"]', post.description);
-    setTextContent(liElement, '[data-id="author"]', post.author);
+  setTextContent(liElement, '[data-id="title"]', post.title);
+  setTextContent(liElement, '[data-id="description"]', truncateText(post.description, 100));
+  setTextContent(liElement, '[data-id="author"]', post.author);
+  setTextContent(liElement, '[data-id="timeSpan"]', ` - ${dayjs(post.updateAt).fromNow()}`);
 
-    setImage(liElement, '[data-id="thumbnail"]', post.imageUrl);
+  setImage(liElement, '[data-id="thumbnail"]', post.imageUrl);
 
-    // attach events
+  // attach events
 
-    return liElement;
-  } catch (error) {
-    console.log('failed to create post item', error);
-  }
+  return liElement;
 }
 
 function renderPostList(postList) {
