@@ -33,7 +33,7 @@ export function initPagination({ elementId, defaultParams, onChange }) {
     prevLink.addEventListener('click', (e) => {
       e.preventDefault();
       const page = Number.parseInt(ulPagination.dataset.page) || 1;
-      if (page > 2) onChange?.(page - 1);
+      if (page > 1) onChange?.(page - 1);
     });
   }
 
