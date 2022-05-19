@@ -111,13 +111,15 @@
                   <a href="https://picsum.photos">Picsum service</a> to get a random image.
                 </small>
 
-                <input type="hidden" name="imageUrl" />
+                <input type="text" name="imageUrl" class="d-none" />
 
                 <di>
                   <button type="button" id="postChangeImage" class="btn btn-dark">
                     Change post image
                   </button>
                 </di>
+
+                <div class="invalid-feedback"></div>
               </div>
 
               <div class="text-center">
