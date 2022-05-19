@@ -14,7 +14,7 @@ function renderPostDetail(post) {
     dayjs(post.updateAt).format(' - DD/MM/YYYY HH:mm')
   );
 
-  setBackgroundImage(document, 'postHeroImage', post.imageUrl);
+  setBackgroundImage(document, '#postHeroImage', post.imageUrl);
 
   // render edit page link
   const editPageLink = document.getElementById('goToEditPageLink');
