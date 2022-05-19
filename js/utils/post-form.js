@@ -1,4 +1,5 @@
 import { setBackgroundImage, setFieldValue, setTextContent } from './common';
+import * as yup from 'yup';
 
 function setFormValues(form, formValues) {
   setFieldValue(form, '[name="title"]', formValues?.title);
@@ -41,18 +42,68 @@ function getTitleError(form) {
   return '';
 }
 
-function validatedPostForm(form, formValues) {
-  // get errors
-  const errors = {
-    title: getTitleError(form),
-  };
+function getPostSchema() {
+  return yup.object().shape({
+    title: yup.string().required('Please enter title'),
+    author: yup
+      .string()
+      .required('Please enter author')
+      .test(
+        'at-least-two-words',
+        'Please enter at least two words',
+        (value) => value.split(' ').filter((x) => !!x && x.length >= 3).length >= 2
+      ),
+    description: yup.string(),
+  });
+}
 
-  // set errors
-  for (const key in errors) {
-    const element = form.querySelector(`[name="${key}"]`);
-    if (element) {
-      element.setCustomValidity(errors[key]);
-      setTextContent(element.parentElement, '.invalid-feedback', errors[key]);
+function setFieldError(form, name, error) {
+  const element = form.querySelector(`[name="${name}"]`);
+  if (element) {
+    element.setCustomValidity(error);
+    setTextContent(element.parentElement, '.invalid-feedback', error);
+  }
+}
+
+async function validatedPostForm(form, formValues) {
+  // get errors
+  // const errors = {
+  //   title: getTitleError(form),
+  // };
+
+  // // set errors
+  // for (const key in errors) {
+  //   const element = form.querySelector(`[name="${key}"]`);
+  //   if (element) {
+  //     element.setCustomValidity(errors[key]);
+  //     setTextContent(element.parentElement, '.invalid-feedback', errors[key]);
+  //   }
+  // }
+
+  try {
+    // reset previous errors
+    ['title', 'author'].forEach((name) => setFieldError(form, name, ''));
+
+    // start validating
+    const schema = getPostSchema();
+    await schema.validate(formValues, { abortEarly: false });
+  } catch (error) {
+    // console.log(error.name);
+    // console.log(error.inner);
+
+    const errorLog = {};
+
+    if (error.name === 'ValidationError' && Array.isArray(error.inner)) {
+      for (const validationError of error.inner) {
+        const name = validationError.path;
+
+        // ignore if the field is already logged
+        if (errorLog[name]) continue;
+
+        // set field error and mark as logged
+        setFieldError(form, name, validationError.message);
+        errorLog[name] = true;
+      }
     }
   }
 
@@ -62,24 +113,52 @@ function validatedPostForm(form, formValues) {
   return isValid;
 }
 
+function showLoading(form) {
+  const button = form.querySelector('[name="submit"]');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Saving...';
+  }
+}
+
+function hideLoading(form) {
+  const button = form.querySelector('[name="submit"]');
+  if (button) {
+    button.disabled = false;
+    button.textContent = 'Saving';
+  }
+}
+
 export function initPostForm({ formId, defaultValues, onSubmit }) {
   const form = document.getElementById(formId);
   if (!form) return;
 
+  let submitting = false;
+
   setFormValues(form, defaultValues);
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    console.log('submit form');
+    // Prevent other submission
+    if (submitting) return;
+
+    showLoading(form);
+    submitting = true;
 
     // get form values
     const formValues = getFormValues(form);
-    console.log(formValues);
+    formValues.id = defaultValues.id;
 
     // validation
     // if valid trigger submit callback
     // otherwise, show validation errors
-    if (!validatedPostForm(form, formValues)) return;
+    const isValid = await validatedPostForm(form, formValues);
+    if (!isValid) return;
+
+    await onSubmit?.(formValues);
+
+    hideLoading(form);
+    submitting = false;
   });
 }
