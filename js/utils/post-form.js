@@ -1,6 +1,11 @@
 import { randomNumber, setBackgroundImage, setFieldValue, setTextContent } from './common';
 import * as yup from 'yup';
 
+const ImageSource = {
+  PICSUM: 'picsum',
+  UPLOAD: 'upload',
+};
+
 function setFormValues(form, formValues) {
   setFieldValue(form, '[name="title"]', formValues?.title);
   setFieldValue(form, '[name="author"]', formValues?.author);
@@ -54,10 +59,29 @@ function getPostSchema() {
         (value) => value.split(' ').filter((x) => !!x && x.length >= 3).length >= 2
       ),
     description: yup.string(),
-    imageUrl: yup
+    imageSource: yup
       .string()
-      .required('Please random a background image')
-      .url('Please enter a valid URL'),
+      .required('Please selected an image source')
+      .oneOf([ImageSource.PICSUM, ImageSource.UPLOAD], 'Invalid image source'),
+    imageUrl: yup.string().when('imageSource', {
+      is: ImageSource.PICSUM,
+      then: yup
+        .string()
+        .required('Please random a background image')
+        .url('Please enter a valid URL'),
+    }),
+    image: yup.mixed().when('imageSource', {
+      is: ImageSource.UPLOAD,
+      then: yup
+        .mixed()
+        .test('required', 'Please select an image to upload', (file) => Boolean(file?.name))
+        .test('max-3mb', 'The image is too large (max 3mb)', (file) => {
+          const fileSize = file?.size || 0;
+          const MAX_SIZE = 3 * 1024 * 1024; // 3mb
+          // const MAX_SIZE = 60 * 1024; // 10kb
+          return fileSize <= MAX_SIZE;
+        }),
+    }),
   });
 }
 
@@ -86,7 +110,7 @@ async function validatedPostForm(form, formValues) {
 
   try {
     // reset previous errors
-    ['title', 'author', 'imageUrl'].forEach((name) => setFieldError(form, name, ''));
+    ['title', 'author', 'imageUrl', 'image'].forEach((name) => setFieldError(form, name, ''));
 
     // start validating
     const schema = getPostSchema();
@@ -115,6 +139,24 @@ async function validatedPostForm(form, formValues) {
   const isValid = form.checkValidity();
   if (!isValid) form.classList.add('was-validated');
   return isValid;
+}
+
+async function validateFormField(form, formValues, name) {
+  try {
+    // clear previous error
+    setFieldError(form, name, '');
+
+    const schema = getPostSchema();
+    await schema.validateAt(name, formValues);
+  } catch (error) {
+    setFieldError(form, name, error.message);
+  }
+
+  // show validation error (if any)
+  const field = form.querySelector(`[name="${name}"]`);
+  if (field && !field.checkValidity()) {
+    field.parentElement.classList.add('was-validated');
+  }
 }
 
 function showLoading(form) {
@@ -146,6 +188,55 @@ function initRandomImage(form) {
   });
 }
 
+function renderImageSourceControl(form, selectedValue) {
+  const controlList = form.querySelectorAll('[data-id="imageSource"]');
+  console.log(controlList);
+  controlList.forEach((control) => {
+    control.hidden = control.dataset.imageSource !== selectedValue;
+  });
+}
+
+function initRadioImageSource(form) {
+  const radioList = form.querySelectorAll('[name="imageSource"]');
+  radioList.forEach((radio) => {
+    radio.addEventListener('change', (event) => renderImageSourceControl(form, event.target.value));
+  });
+}
+
+function initUploadImage(form) {
+  const uploadImage = form.querySelector('[name="image"]');
+  if (!uploadImage) return;
+
+  uploadImage.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setBackgroundImage(document, '[id="postHeroImage"]', imageUrl);
+
+      validateFormField(
+        form,
+        {
+          imageSource: ImageSource.UPLOAD,
+          image: file,
+        },
+        'image'
+      );
+    }
+  });
+}
+
+function initValidationOnChange(form) {
+  ['title', 'author'].forEach((name) => {
+    const field = form.querySelector(`[name="${name}"]`);
+    if (field) {
+      field.addEventListener('input', (event) => {
+        const newValue = event.target.value;
+        validateFormField(form, { [name]: newValue }, name);
+      });
+    }
+  });
+}
+
 export function initPostForm({ formId, defaultValues, onSubmit }) {
   const form = document.getElementById(formId);
   if (!form) return;
@@ -155,6 +246,9 @@ export function initPostForm({ formId, defaultValues, onSubmit }) {
 
   // init events
   initRandomImage(form);
+  initRadioImageSource(form);
+  initUploadImage(form);
+  initValidationOnChange(form);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
