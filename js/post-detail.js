@@ -45,6 +45,11 @@ function renderPostDetail(post) {
 
     const post = await postApi.getById(postId);
     renderPostDetail(post);
+
+    const loading = document.querySelector('#loader-wrapper');
+    if (loading) {
+      loading.setAttribute('hidden', '');
+    }
   } catch (error) {
     console.log('failed to fetch post detail', error);
   }

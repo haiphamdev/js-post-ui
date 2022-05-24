@@ -1,5 +1,13 @@
 import postApi from './api/postApi';
-import { initPagination, initSearch, renderPagination, renderPostList, toast } from './utils';
+import {
+  hideModal,
+  initPagination,
+  initSearch,
+  registerModal,
+  renderPagination,
+  renderPostList,
+  toast,
+} from './utils';
 
 async function handleFilterChange(filterName, filterValue) {
   try {
@@ -23,17 +31,26 @@ async function handleFilterChange(filterName, filterValue) {
 }
 
 function registerPostDeleteEvent() {
-  document.addEventListener('post-delete', async (event) => {
-    console.log('remove post click', event.detail);
+  document.addEventListener('post-delete', (event) => {
     try {
+      const modalElement = document.getElementById('modal');
       const post = event.detail;
       const message = `Are you sure to remove post "${post.title}"`;
-      if (window.confirm(message)) {
-        await postApi.remove(post.id);
-        await handleFilterChange();
+      registerModal({
+        modalId: 'modal',
+        titleValue: message,
+        deleteSelector: '[data-id="remove"]',
+        post,
+      });
 
-        toast.success('Remove post successfully');
-      }
+      const deleteButton = modalElement.querySelector('[data-id="remove"]');
+      if (deleteButton)
+        deleteButton.addEventListener('click', async () => {
+          await postApi.remove(post.id);
+          await handleFilterChange();
+          toast.success('Remove post successfully');
+          hideModal(modalElement);
+        });
     } catch (error) {
       console.log('failed to remove post', error);
       toast.error(error.message);
@@ -73,6 +90,11 @@ function registerPostDeleteEvent() {
     // renderPagination('pagination', pagination);
     registerPostDeleteEvent();
     handleFilterChange();
+
+    const loading = document.querySelector('#loader-wrapper');
+    if (loading) {
+      loading.setAttribute('hidden', '');
+    }
   } catch (error) {
     console.log('get all failed', error);
     // show modal, toast error

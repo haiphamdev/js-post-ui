@@ -55,8 +55,8 @@ async function handlePostFormSubmit(formValues) {
     toast.success('Save post successfully! ');
 
     // redirect to detail page
-     
-    console.log('redirect to', savePost.id);
+    window.location.assign(`/post-detail.html?id=${savePost.id}`);
+    // console.log('redirect to', savePost.id);
   } catch (error) {
     console.log('failed to save post', error);
     toast.error(`Error ${error.message}`);
